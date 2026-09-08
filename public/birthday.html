@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birthdate Test — Roblox</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0e0e10;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #1a1a1e;
+    border: 1px solid #2a2a30;
+    border-radius: 20px;
+    padding: 40px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  .sub { color: #777; font-size: 13px; margin-bottom: 24px; line-height: 1.5; }
+  label { display:block; font-size: 13px; color: #aaa; margin-bottom: 8px; }
+  input, select {
+    width: 100%;
+    padding: 13px 15px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 18px;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: #f26522; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f26522, #e63946);
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform .1s, opacity .2s;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .result {
+    display: none;
+    margin-top: 22px;
+    background: #111;
+    border: 1px solid #2a2a30;
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .result h2 { font-size: 15px; margin-bottom: 12px; }
+  .result h2.ok { color: #43b581; }
+  .result h2.fail { color: #f04747; }
+  pre {
+    background: #0a0a0c;
+    border: 1px solid #2a2a30;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 12px;
+    color: #ccc;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  .note { font-size: 12px; color: #666; margin-top: 18px; line-height: 1.6; }
+  .note b { color: #999; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧪 Birthdate Change Test</h1>
+    <div class="sub">
+      Experiment lang ito — titignan natin kung gumagana pa yung
+      <code style="color:#f26522">users.roblox.com/v1/birthdate</code> endpoint.
+      Hindi nasesave ang password mo anywhere.
+    </div>
+
+    <label for="cookie">.ROBLOSECURITY Cookie</label>
+    <input type="password" id="cookie" placeholder="_|WARNING:-DO-NOT-SHARE...|" autocomplete="off">
+
+    <label for="password">Account Password</label>
+    <input type="password" id="password" placeholder="Password ng Roblox account" autocomplete="off">
+
+    <label>Birthday na ilalagay</label>
+    <div class="row">
+      <div>
+        <select id="month">
+          <option value="">Month</option>
+        </select>
+      </div>
+      <div>
+        <select id="day">
+          <option value="">Day</option>
+        </select>
+      </div>
+      <div>
+        <input type="number" id="year" placeholder="Year" min="1900" max="2026">
+      </div>
+    </div>
+
+    <button id="btn" onclick="testChange()">Change Birthday</button>
+
+    <div class="result" id="result">
+      <h2 id="resultTitle"></h2>
+      <pre id="resultBody"></pre>
+    </div>
+
+    <div class="note">
+      <b>Mga karaniwang response:</b><br>
+      • <b>200 / empty</b> = gumana, nabago na yung birthday<br>
+      • <b>403 + InvalidPassword</b> = mali yung password na inilagay<br>
+      • <b>403 + InvalidBirthdate</b> = hindi valid yung date (e.g. age &lt; 13 hanggang 2024 policy, o sobrang bata/tanda)<br>
+      • <b>403 + VerificationRequired / age-related error</b> = naka-lock na yung DOB, kailangan dumaan sa official Settings flow<br>
+      • <b>429 / Flooded</b> = masyadong maraming attempt, hintayan muna
+    </div>
+  </div>
+
+<script>
+  // populate month and day dropdowns
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const mSel = document.getElementById('month');
+  months.forEach((m, i) => {
+    const o = document.createElement('option');
+    o.value = i + 1; o.textContent = m;
+    mSel.appendChild(o);
+  });
+  const dSel = document.getElementById('day');
+  for (let d = 1; d <= 31; d++) {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d;
+    dSel.appendChild(o);
+  }
+
+  async function testChange() {
+    const cookie = document.getElementById('cookie').value.trim();
+    const password = document.getElementById('password').value;
+    const birthMonth = mSel.value;
+    const birthDay = dSel.value;
+    const birthYear = document.getElementById('year').value.trim();
+
+    const btn = document.getElementById('btn');
+    const result = document.getElementById('result');
+    const title = document.getElementById('resultTitle');
+    const body = document.getElementById('resultBody');
+
+    if (!cookie || !password || !birthMonth || !birthDay || !birthYear) {
+      title.className = 'fail'; title.textContent = '⚠️ Kulang ang fields';
+      body.textContent = 'Kumpletohin mo muna lahat: cookie, password, at birthday.';
+      result.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Testing...';
+    title.className = ''; title.textContent = '⏳ Tinatawag ang Roblox API...';
+    body.textContent = '';
+    result.style.display = 'block';
+
+    try {
+      const r = await fetch('/api/change-birthdate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookie, password, birthMonth, birthDay, birthYear })
+      });
+      const d = await r.json();
+
+      if (d.ok) {
+        title.className = 'ok';
+        title.textContent = '✅ GUMANA! HTTP ' + d.status;
+      } else {
+        title.className = 'fail';
+        title.textContent = '❌ HINDI GUMANA' + (d.status ? ' (HTTP ' + d.status + ')' : '');
+      }
+      body.textContent = JSON.stringify(d, null, 2);
+    } catch (e) {
+      title.className = 'fail';
+      title.textContent = '❌ Server error';
+      body.textContent = e.message;
+    }
+
+    btn.disabled = false; btn.textContent = 'Change Birthday';
+  }
+</script>
+</body>
+  </html>
+  
